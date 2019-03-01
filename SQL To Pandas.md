@@ -1,5 +1,33 @@
 
-# SQL to Pandas 速查表
+# 【Python】SQL to Pandas 速查表（一）
+
+### 介绍
+**SQL** 是用于访问和处理数据库的标准的计算机语言。
+常用于数据库管理系统（RDBMS）中，
+这类数据库包括 **MySQL**、**SQL Server**、**Oracle**等。
+
+**Pandas** 是一个开源的，为 **Python** 提供高性能的，数据结构以及数据分析工具。
+
+在熟练地使用 **SQL** 的同时，为满足一些的业务需求，常常需要我们将数据提取后，再对数据进行统计分析，那应该如何使用 **Pandas** 达到和 **SQL** 一样的效果呢？
+
+下面的速查表将会逐一使用 **Pandas** 对常见的 **SQL** 语句进行映射。
+
+### 本篇内容
+
+本篇将解构下面的 **SQL** 查询句式, 使用 **Pandas** 进行实现
+
+**SQL 查询句式**
+```sql
+SELECT DISTINCT [字段] 
+FROM [表] JOIN [bin] ON [连接条件] 
+WHERE [过滤条件] 
+GROUP BY [字段] 
+HAVING [条件] 
+ORDER BY [字段] DESC 
+LIMIT [个数] OFFSET [个数]
+```
+
+### 读取测试数据
 
 
 ```python
@@ -7,25 +35,16 @@ import pandas as pd
 import pymysql
 ```
 
-## 术语对照表
-
-| SQL |Pandas |
-| --- | --- |
-|  row| row |
-|  column| column |
-|  index| index |
-|  table| DataFrame |
-|  limit | head |
-
 
 ```python
-conn = pymysql.connect(host='127.0.0.1', user='root', password='12345678',db='test_db')
-```
-
-
-```python
+conn = pymysql.connect(host='127.0.0.1',
+                       user='root',
+                       password='12345678',
+                       db='test_db')
 df = pd.read_sql(sql="select * from student", con=conn)
 ```
+
+**数据预览**
 
 
 ```python
@@ -176,19 +195,9 @@ df
 
 
 
-**SQL 常用句式**
 
-```sql
-SELECT DISTINCT [字段] 
-FROM [表] JOIN [bin] ON [连接条件] 
-WHERE [过滤条件] 
-GROUP BY [字段] 
-HAVING [条件] 
-ORDER BY [字段] DESC 
-LIMIT [个数] OFFSET [个数]
-```
 
-## SELECT
+### SELECT
 
 **SQL**
 ```sql
@@ -214,6 +223,49 @@ SELECT DISTINCT name FROM student
 **Pandas**
 ```python
 df['name'].unique()
+```
+
+### COUNT & SUM & MAX & MIN & AVG
+
+**SQL**
+```sql
+SELECT COUNT(*) FROM student
+
+SELECT SUM(money) FROM student
+
+SELECT id, MAX(money) FROM student
+
+SELECT id, MIN(money) FROM student
+
+SELECT AVG(money) FROM student
+```
+ 
+**Pandas**
+```python
+df['id'].count()
+
+df['money'].sum()
+
+df[df['money'] == df['money'].max()]
+
+df[df['money'] == df['money'].min()]
+
+df['money'].mean()
+```
+
+**描述性统计数据**
+```python
+In [1]: df['money'].describe()
+    
+Out[1]: count     12.000000
+        mean      59.583333
+        std       72.963825
+        min        2.000000
+        25%       16.250000
+        50%       32.500000
+        75%       62.500000
+        max      210.000000
+        Name: money, dtype: float64
 ```
 
 ### WHERE
@@ -258,16 +310,20 @@ SELECT * FROM student WHERE sex = '男' and id IN (2,4,6,8,10)
 df[(df['sex'] == ('男')) & (df['id'].isin((2,4,6,8)))]
 ```
 
-### LIMIT
+### LIMIT OFFSET
 
 **SQL**
 ```sql
-SELECT * FROM student limit 3
+SELECT * FROM student ORDER BY id DESC LIMIT 3
+
+SELECT * FROM student ORDER BY id DESC LIMIT 3 OFFSET 2
 ```
  
 **Pandas**
 ```python
-df.head(3)
+df.sort_values('id',ascending=False).head(3)
+
+df.nlargest(2 + 3, 'id').tail(3)
 ```
 
 ### SELECT & WHERE & LIMIT
@@ -364,113 +420,4 @@ SELECT city, COUNT(*) FROM student GROUP BY city HAVING count(*) > 3
 **Pandas**
 ```python
 df.groupby('city').filter(lambda x:len(x)>3).groupby('city').size().to_frame('size').reset_index()
-```
-
-
-```python
-df.groupby('city').filter(lambda x:len(x)>3).groupby('city').size().to_frame('size').reset_index()
-```
-
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>city</th>
-      <th>size</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>北京</td>
-      <td>4</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>成都</td>
-      <td>4</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-
-
-
-```python
-df.groupby(['city']).size().to_frame('size').reset_index()
-```
-
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>city</th>
-      <th>size</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>北京</td>
-      <td>4</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>天津</td>
-      <td>3</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>成都</td>
-      <td>4</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>西安</td>
-      <td>1</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-
-
-
-```python
-
 ```
